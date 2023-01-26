@@ -1,19 +1,48 @@
-const { Posts, sequelize } = require("../models");
+const { Posts, sequelize, Users, Answers } = require("../models");
 
 class PostRepository {
-  findAllPost = async () => {
-    const result = await Posts.findAll({});
-    console.log(`controller hello`);
+  findAllPost = async (userNo) => {
+    const result = await Posts.findAll({
+      include: [
+        {
+          model: Users,
+          attributes: ["nickname"],
+        },
+        {
+          model: Answers,
+          where: { userNo: userNo },
+          required: false,
+        },
+      ],
+      group: ["Posts.postId"],
+    });
+
     return result;
   };
 
-  /**
-   * postId으로 특정 게시글 1개를 찾는 함수
-   * @param { String } postId
-   * @returns 특정 게시글 1개에 대한 객체 반환
-   */
   findPostById = async (postId) => {
-    const result = await Posts.findOne({ where: { postId } });
+    const result = await Posts.findOne({
+      where: { postId },
+      include: [
+        {
+          model: Users,
+          attributes: ["nickname"],
+        },
+        {
+          model: Answers,
+          where: { postId: postId },
+          attributes: ["userNo"],
+          required: false,
+          include: [
+            {
+              model: Users,
+              attributes: ["nickname", "userNo"],
+            },
+          ],
+        },
+      ],
+    });
+
     return result;
   };
 
@@ -21,11 +50,20 @@ class PostRepository {
     const { userNo, image, inputAnswer, inputHint, difficult } = postInputArgs;
 
     const result = await Posts.create({
-      userNo: userNo,
-      imageSrc: image,
-      inputAnswer: inputAnswer,
-      inputHint: inputHint,
-      difficult: difficult,
+      userNo,
+      image,
+      inputAnswer,
+      inputHint,
+      difficult,
+    });
+    return result;
+  };
+
+  createAnswerd = async (answerInputArgs) => {
+    const { userNo, postId } = answerInputArgs;
+    const result = await Answers.create({
+      userNo,
+      postId,
     });
     return result;
   };
